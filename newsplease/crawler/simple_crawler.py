@@ -48,7 +48,18 @@ class SimpleCrawler(object):
         try:
             # read by streaming chunks (stream=True, iter_content=xx)
             # so we can stop downloading as soon as MAX_FILE_SIZE is reached
-            response = requests.get(url, timeout=timeout, verify=False, allow_redirects=True, headers=HEADERS)
+            with requests.get(url, timeout=timeout, verify=False, allow_redirects=True, headers=HEADERS) as response:
+                if response.status_code != 200:
+                LOGGER.error('not a 200 response: %s', response.status_code)
+                elif response.text is None or len(response.text) < MIN_FILE_SIZE:
+                    LOGGER.error('too small/incorrect: %s %s', url, len(response.text))
+                elif len(response.text) > MAX_FILE_SIZE:
+                    LOGGER.error('too large: %s %s', url, len(response.text))
+                else:
+                    html_str = decode_response(response)
+                if is_threaded:
+                    SimpleCrawler._results[url] = html_str
+                return html_str
         except (requests.exceptions.MissingSchema, requests.exceptions.InvalidURL):
             LOGGER.error('malformed URL: %s', url)
         except requests.exceptions.TooManyRedirects:
@@ -60,18 +71,6 @@ class SimpleCrawler(object):
             requests.exceptions.Timeout, socket.error, socket.gaierror
         ) as err:
             LOGGER.error('connection/timeout error: %s %s', url, err)
-        else:
-            # safety checks
-            if response.status_code != 200:
-                LOGGER.error('not a 200 response: %s', response.status_code)
-            elif response.text is None or len(response.text) < MIN_FILE_SIZE:
-                LOGGER.error('too small/incorrect: %s %s', url, len(response.text))
-            elif len(response.text) > MAX_FILE_SIZE:
-                LOGGER.error('too large: %s %s', url, len(response.text))
-            else:
-                html_str = decode_response(response)
-        if is_threaded:
-            SimpleCrawler._results[url] = html_str
         return html_str
 
     @staticmethod
