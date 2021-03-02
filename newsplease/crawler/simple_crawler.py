@@ -50,7 +50,7 @@ class SimpleCrawler(object):
             # so we can stop downloading as soon as MAX_FILE_SIZE is reached
             with requests.get(url, timeout=timeout, verify=False, allow_redirects=True, headers=HEADERS) as response:
                 if response.status_code != 200:
-                LOGGER.error('not a 200 response: %s', response.status_code)
+                    response: %s', response.status_code)
                 elif response.text is None or len(response.text) < MIN_FILE_SIZE:
                     LOGGER.error('too small/incorrect: %s %s', url, len(response.text))
                 elif len(response.text) > MAX_FILE_SIZE:
